@@ -1,6 +1,3 @@
---// Roblox Mini Hub v1.5
---// Fixed dragging + Simplified Energy + Auto Clicker
-
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -10,14 +7,6 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
---// Настройки
-local SETTINGS = {
-    ClickCooldown = 0.01,
-    SearchRadius = 1000,
-    AutoClickInterval = 0.05
-}
-
---// Данные мозгов
 local brainNames = {
     "NormalBrain_Pickup", "BloodyBrain_Pickup", "ColdBrain_Pickup", "HotBrain_Pickup",
     "OutlineBrain_Pickup", "GhostBrain_Pickup", "SkullBrain_Pickup", "NeonBrain_Pickup",
@@ -29,7 +18,6 @@ local brainNames = {
     "TophatBrain_Pickup", "RobotBrain_Pickup"
 }
 
---// GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = game.CoreGui
 ScreenGui.Name = "MiniHub"
@@ -48,7 +36,6 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
---// TopBar
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 35)
 TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
@@ -59,7 +46,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -100, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "🧠 MINI HUB"
+Title.Text = "MINI HUB"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
@@ -70,7 +57,7 @@ local MinimizeBtn = Instance.new("TextButton")
 MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
 MinimizeBtn.Position = UDim2.new(1, -70, 0, 0)
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-MinimizeBtn.Text = "−"
+MinimizeBtn.Text = "-"
 MinimizeBtn.TextColor3 = Color3.new(1, 1, 1)
 MinimizeBtn.Font = Enum.Font.GothamBold
 MinimizeBtn.TextSize = 20
@@ -80,13 +67,12 @@ local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 35, 0, 35)
 CloseBtn.Position = UDim2.new(1, -35, 0, 0)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-CloseBtn.Text = "×"
+CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.new(1, 1, 1)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.TextSize = 20
 CloseBtn.Parent = TopBar
 
---// Tabs
 local TabFrame = Instance.new("Frame")
 TabFrame.Size = UDim2.new(1, -20, 0, 40)
 TabFrame.Position = UDim2.new(0, 10, 0, 45)
@@ -116,18 +102,16 @@ local function createTabButton(text, color)
     return btn
 end
 
-local BrainTabBtn = createTabButton("🧠 BRAINS", Color3.fromRGB(0, 120, 255))
-local EnergyTabBtn = createTabButton("⚡ ENERGY", Color3.fromRGB(255, 170, 0))
-local ClickerTabBtn = createTabButton("🖱️ CLICK", Color3.fromRGB(170, 0, 255))
+local BrainTabBtn = createTabButton("BRAINS", Color3.fromRGB(0, 120, 255))
+local EnergyTabBtn = createTabButton("ENERGY", Color3.fromRGB(255, 170, 0))
+local ClickerTabBtn = createTabButton("CLICK", Color3.fromRGB(170, 0, 255))
 
---// Content
 local ContentContainer = Instance.new("Frame")
 ContentContainer.Size = UDim2.new(1, -20, 1, -100)
 ContentContainer.Position = UDim2.new(0, 10, 0, 95)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Parent = MainFrame
 
---// Brain Tab
 local BrainFrame = Instance.new("ScrollingFrame")
 BrainFrame.Size = UDim2.new(1, 0, 1, 0)
 BrainFrame.BackgroundTransparency = 1
@@ -140,7 +124,6 @@ local BrainListLayout = Instance.new("UIListLayout")
 BrainListLayout.Padding = UDim.new(0, 5)
 BrainListLayout.Parent = BrainFrame
 
---// Energy Tab (УПРОЩЁННЫЙ)
 local EnergyFrame = Instance.new("Frame")
 EnergyFrame.Size = UDim2.new(1, 0, 1, 0)
 EnergyFrame.BackgroundTransparency = 1
@@ -161,10 +144,10 @@ local EnergyToggle = Instance.new("TextButton")
 EnergyToggle.Size = UDim2.new(1, -40, 0, 60)
 EnergyToggle.Position = UDim2.new(0, 20, 0, 70)
 EnergyToggle.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
-EnergyToggle.Text = "START AUTO COLLECT"
+EnergyToggle.Text = "START"
 EnergyToggle.TextColor3 = Color3.new(1, 1, 1)
 EnergyToggle.Font = Enum.Font.GothamBold
-EnergyStats.TextSize = 18
+EnergyToggle.TextSize = 18
 EnergyToggle.Parent = EnergyFrame
 
 local EnergyToggleCorner = Instance.new("UICorner")
@@ -181,7 +164,6 @@ EnergyStats.Font = Enum.Font.GothamBold
 EnergyStats.TextSize = 24
 EnergyStats.Parent = EnergyFrame
 
---// Clicker Tab
 local ClickerFrame = Instance.new("Frame")
 ClickerFrame.Size = UDim2.new(1, 0, 1, 0)
 ClickerFrame.BackgroundTransparency = 1
@@ -202,7 +184,7 @@ local ClickerToggle = Instance.new("TextButton")
 ClickerToggle.Size = UDim2.new(1, -40, 0, 50)
 ClickerToggle.Position = UDim2.new(0, 20, 0, 50)
 ClickerToggle.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
-ClickerToggle.Text = "START AUTO CLICK"
+ClickerToggle.Text = "START"
 ClickerToggle.TextColor3 = Color3.new(1, 1, 1)
 ClickerToggle.Font = Enum.Font.GothamBold
 ClickerToggle.TextSize = 16
@@ -230,7 +212,6 @@ ClickSpeedBox.Text = "50"
 ClickSpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 ClickSpeedBox.Font = Enum.Font.GothamBold
 ClickSpeedBox.TextSize = 16
-ClickSpeedBox.PlaceholderText = "Interval (ms)"
 ClickSpeedBox.Parent = ClickerFrame
 
 local ClickStats = Instance.new("TextLabel")
@@ -243,44 +224,27 @@ ClickStats.Font = Enum.Font.Gotham
 ClickStats.TextSize = 18
 ClickStats.Parent = ClickerFrame
 
---// ============================================
---// FIXED DRAGGING (Рабочая версия)
---// ============================================
 local dragging = false
-local dragInput = nil
 local dragStart = nil
 local startPos = nil
 
--- Начало перетаскивания
-TopBar.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
+TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-                dragStart = nil
-                dragInput = nil
-            end
-        end)
     end
 end)
 
--- Отслеживание движения мыши
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
+TopBar.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
     end
 end)
 
--- Обновление позиции
-RunService.RenderStepped:Connect(function()
-    if dragging and dragStart and startPos and dragInput then
-        local delta = dragInput.Position - dragStart
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement and dragStart and startPos then
+        local delta = input.Position - dragStart
         MainFrame.Position = UDim2.new(
             startPos.X.Scale,
             startPos.X.Offset + delta.X,
@@ -290,15 +254,13 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
---// ============================================
---// BRAIN BUTTONS
---// ============================================
 local brainButtons = {}
+
 local function createBrainButton(name)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 40)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    btn.Text = "  " .. name:gsub("_Pickup", ""):gsub("Brain", "")
+    btn.Text = name:gsub("_Pickup", ""):gsub("Brain", "")
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.Gotham
     btn.TextSize = 14
@@ -350,9 +312,6 @@ spawn(function()
     end
 end)
 
---// ============================================
-// SIMPLIFIED ENERGY SYSTEM (Только 1 кнопка, зависаем внутри)
---// ============================================
 local energyRunning = false
 local energyCollected = 0
 local hoverConnection = nil
@@ -361,7 +320,6 @@ local function enableHover()
     if hoverConnection then return end
     hoverConnection = RunService.Heartbeat:Connect(function()
         if not energyRunning or not HumanoidRootPart then return end
-        -- No-clip + зависание
         HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         for _, part in pairs(Character:GetDescendants()) do
             if part:IsA("BasePart") then
@@ -421,33 +379,26 @@ local function energyLoop()
         local energy = findNearestEnergy()
         
         if energy then
-            EnergyStatus.Text = "⚡ COLLECTING"
+            EnergyStatus.Text = "COLLECTING"
             EnergyStatus.TextColor3 = Color3.fromRGB(0, 255, 100)
             
-            -- Телепорт РОВНО В ЦЕНТР энергии
             HumanoidRootPart.CFrame = CFrame.new(energy.Position)
             
-            -- Клик
             local clickDetector = energy:FindFirstChildOfClass("ClickDetector")
-            if clickDetector then
-                fireclickdetector(clickDetector)
-            end
             
-            -- Зависаем внутри пока не соберётся
             while energy.Parent and energyRunning do
-                HumanoidRootPart.CFrame = CFrame.new(energy.Position) -- Фиксируем позицию
+                HumanoidRootPart.CFrame = CFrame.new(energy.Position)
                 if clickDetector then
                     fireclickdetector(clickDetector)
                 end
                 wait(0.05)
             end
             
-            -- Собрано! Сразу к следующей
             energyCollected = energyCollected + 1
             EnergyStats.Text = "Collected: " .. energyCollected
-            wait(0.1) -- Микро-пауза перед следующим поиском
+            wait(0.1)
         else
-            EnergyStatus.Text = "🔍 SEARCHING"
+            EnergyStatus.Text = "SEARCHING"
             EnergyStatus.TextColor3 = Color3.fromRGB(255, 170, 0)
             wait(0.2)
         end
@@ -458,9 +409,6 @@ local function energyLoop()
     EnergyStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 end
 
---// ============================================
---// AUTO CLICKER
---// ============================================
 local clickerRunning = false
 local totalClicks = 0
 
@@ -484,7 +432,6 @@ local function clickerLoop()
             ClickerStatus.Text = "Auto Clicker: ON"
             ClickerStatus.TextColor3 = Color3.fromRGB(0, 255, 100)
             
-            -- Клик
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
             wait(0.01)
             VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
@@ -509,10 +456,6 @@ local function clickerLoop()
     ToolStatus.TextColor3 = Color3.fromRGB(150, 150, 150)
 end
 
---// ============================================
---// HANDLERS
---// ============================================
-
 EnergyToggle.MouseButton1Click:Connect(function()
     energyRunning = not energyRunning
     if energyRunning then
@@ -520,7 +463,7 @@ EnergyToggle.MouseButton1Click:Connect(function()
         EnergyToggle.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
         spawn(energyLoop)
     else
-        EnergyToggle.Text = "START AUTO COLLECT"
+        EnergyToggle.Text = "START"
         EnergyToggle.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
         disableHover()
     end
@@ -533,12 +476,11 @@ ClickerToggle.MouseButton1Click:Connect(function()
         ClickerToggle.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
         spawn(clickerLoop)
     else
-        ClickerToggle.Text = "START AUTO CLICK"
+        ClickerToggle.Text = "START"
         ClickerToggle.BackgroundColor3 = Color3.fromRGB(170, 0, 255)
     end
 end)
 
---// Tab Switching
 local function switchTab(tabName)
     BrainFrame.Visible = tabName == "Brain"
     EnergyFrame.Visible = tabName == "Energy"
@@ -553,7 +495,6 @@ BrainTabBtn.MouseButton1Click:Connect(function() switchTab("Brain") end)
 EnergyTabBtn.MouseButton1Click:Connect(function() switchTab("Energy") end)
 ClickerTabBtn.MouseButton1Click:Connect(function() switchTab("Clicker") end)
 
---// Minimize / Close
 local isMinimized = false
 MinimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -569,7 +510,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
---// Respawn
 Player.CharacterAdded:Connect(function(char)
     Character = char
     HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
@@ -584,5 +524,3 @@ Player.CharacterAdded:Connect(function(char)
         spawn(clickerLoop)
     end
 end)
-
-print("✅ Mini Hub v1.5 - Fixed drag + Simple Energy + Clicker")
