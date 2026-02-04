@@ -1,0 +1,366 @@
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local UserInputService = game:GetService("UserInputService")
+
+local TELEPORT_DELAY = 0.15
+
+local function findCheckpointsFolder()
+    local possibleNames = {
+        "Checkpoints", "Checkpoint", "Stages", "Stage", "Levels", "Level",
+        "Spawns", "Spawn", "Check", "Points", "StageFolder", "LevelFolder",
+        "CheckPointFolder", "StageParts", "CheckParts", "StagesFolder",
+        "CheckpointsFolder", "Obby", "Towers", "Floors", "Zones",
+        "CHECKPOINTS", "STAGES", "LEVELS"
+    }
+    
+    for _, name in ipairs(possibleNames) do
+        local folder = workspace:FindFirstChild(name)
+        if folder and (folder:IsA("Folder") or folder:IsA("Model")) then
+            for _, child in pairs(folder:GetChildren()) do
+                if tonumber(child.Name) then
+                    return folder
+                end
+            end
+        end
+    end
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Folder") or obj:IsA("Model") then
+            local nameLower = obj.Name:lower()
+            if nameLower:find("checkpoint") or nameLower:find("stage") or 
+               nameLower:find("level") or nameLower:find("spawn") or
+               nameLower:find("obby") or nameLower:find("tower") then
+                for _, child in pairs(obj:GetChildren()) do
+                    if tonumber(child.Name) then
+                        return obj
+                    end
+                end
+            end
+        end
+    end
+    
+    local bestFolder = nil
+    local maxNumbered = 0
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Folder") or obj:IsA("Model") then
+            local numberedCount = 0
+            for _, child in pairs(obj:GetChildren()) do
+                if tonumber(child.Name) and (child:IsA("BasePart") or child:IsA("Model")) then
+                    numberedCount = numberedCount + 1
+                end
+            end
+            if numberedCount > maxNumbered and numberedCount >= 3 then
+                maxNumbered = numberedCount
+                bestFolder = obj
+            end
+        end
+    end
+    
+    return bestFolder
+end
+
+local function findStageValue()
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        for _, stat in pairs(leaderstats:GetChildren()) do
+            local name = stat.Name:lower()
+            if (name:find("stage") or name:find("level") or name:find("checkpoint")) and stat:IsA("ValueBase") then
+                return stat
+            end
+        end
+    end
+    
+    for _, obj in pairs(player:GetChildren()) do
+        if obj:IsA("ValueBase") then
+            local name = obj.Name:lower()
+            if name:find("stage") or name:find("level") or name:find("checkpoint") then
+                return obj
+            end
+        end
+    end
+    
+    return nil
+end
+
+local function findMaxCheckpoint(folder)
+    local maxNum = 0
+    local minNum = math.huge
+    
+    for _, obj in pairs(folder:GetChildren()) do
+        local num = tonumber(obj.Name)
+        if num then
+            if num > maxNum then maxNum = num end
+            if num < minNum then minNum = num end
+        end
+    end
+    
+    return maxNum, minNum
+end
+
+local CHECKPOINTS_FOLDER = findCheckpointsFolder()
+if not CHECKPOINTS_FOLDER then
+    warn("❌ Папка с чекпоинтами не найдена!")
+    return
+end
+
+local stageValue = findStageValue()
+local currentStage = stageValue and stageValue.Value or 1
+
+local MAX_CHECKPOINT, MIN_CHECKPOINT = findMaxCheckpoint(CHECKPOINTS_FOLDER)
+print("✅ Найдено: " .. CHECKPOINTS_FOLDER:GetFullName())
+print("🎯 Чекпоинтов: " .. MIN_CHECKPOINT .. " - " .. MAX_CHECKPOINT)
+print("📍 Текущий: " .. currentStage)
+
+local function getCheckpoint(number)
+    return CHECKPOINTS_FOLDER:FindFirstChild(tostring(number))
+end
+
+local function teleportTo(checkpoint)
+    if not checkpoint or not hrp then return false end
+    if checkpoint:IsA("Model") then
+        local primary = checkpoint:FindFirstChildWhichIsA("BasePart")
+        if primary then
+            hrp.CFrame = primary.CFrame + Vector3.new(0, 5, 0)
+            return true
+        end
+    elseif checkpoint:IsA("BasePart") then
+        hrp.CFrame = checkpoint.CFrame + Vector3.new(0, 5, 0)
+        return true
+    end
+    return false
+end
+
+local isTeleporting = false
+
+local function teleportToEnd()
+    if isTeleporting then return end
+    
+    if stageValue then
+        currentStage = stageValue.Value or currentStage
+    end
+    
+    local startStage = currentStage
+    if startStage < MIN_CHECKPOINT then startStage = MIN_CHECKPOINT end
+    if startStage >= MAX_CHECKPOINT then
+        print("✅ Уже на максимуме!")
+        return
+    end
+    
+    isTeleporting = true
+    print("🚀 Телепорт: " .. startStage .. " → " .. MAX_CHECKPOINT)
+    
+    for i = startStage, MAX_CHECKPOINT do
+        local checkpoint = getCheckpoint(i)
+        
+        if checkpoint then
+            teleportTo(checkpoint)
+            if stageValue then stageValue.Value = i end
+            
+            if i % 5 == 0 or i == MAX_CHECKPOINT then
+                print("  ✅ " .. i .. "/" .. MAX_CHECKPOINT)
+            end
+            
+            if i < MAX_CHECKPOINT then
+                task.wait(TELEPORT_DELAY)
+            end
+        else
+            warn("  ⚠️ Не найден: " .. i)
+        end
+    end
+    
+    print("🎉 Готово!")
+    isTeleporting = false
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "CheckpointTeleport"
+gui.ResetOnSpawn = false
+gui.Parent = game.CoreGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 250, 0, 120)
+mainFrame.Position = UDim2.new(0, 50, 0.3, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+local dragBar = Instance.new("Frame")
+dragBar.Name = "DragBar"
+dragBar.Size = UDim2.new(1, 0, 0, 30)
+dragBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+dragBar.BorderSizePixel = 0
+dragBar.Active = true
+dragBar.Parent = mainFrame
+
+local dragCorner = Instance.new("UICorner")
+dragCorner.CornerRadius = UDim.new(0, 8)
+dragCorner.Parent = dragBar
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -60, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "🏁 Checkpoint Teleport"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 14
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = dragBar
+
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Name = "Refresh"
+refreshBtn.Size = UDim2.new(0, 26, 0, 22)
+refreshBtn.Position = UDim2.new(1, -56, 0.5, -11)
+refreshBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+refreshBtn.Text = "🔄"
+refreshBtn.TextSize = 12
+refreshBtn.Parent = dragBar
+
+local refreshCorner = Instance.new("UICorner")
+refreshCorner.CornerRadius = UDim.new(0, 4)
+refreshCorner.Parent = refreshBtn
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "Close"
+closeBtn.Size = UDim2.new(0, 26, 0, 22)
+closeBtn.Position = UDim2.new(1, -28, 0.5, -11)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.TextSize = 12
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = dragBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = closeBtn
+
+local infoFrame = Instance.new("Frame")
+infoFrame.Name = "Info"
+infoFrame.Size = UDim2.new(1, -20, 0, 40)
+infoFrame.Position = UDim2.new(0, 10, 0, 35)
+infoFrame.BackgroundTransparency = 1
+infoFrame.Parent = mainFrame
+
+local info1 = Instance.new("TextLabel")
+info1.Size = UDim2.new(1, 0, 0, 20)
+info1.Position = UDim2.new(0, 0, 0, 0)
+info1.BackgroundTransparency = 1
+info1.Text = "Всего чекпоинтов: " .. MAX_CHECKPOINT
+info1.TextColor3 = Color3.fromRGB(0, 255, 100)
+info1.TextSize = 13
+info1.Font = Enum.Font.GothamSemibold
+info1.Parent = infoFrame
+
+local info2 = Instance.new("TextLabel")
+info2.Size = UDim2.new(1, 0, 0, 20)
+info2.Position = UDim2.new(0, 0, 0, 20)
+info2.BackgroundTransparency = 1
+info2.Text = "Прогресс: " .. currentStage .. " → " .. MAX_CHECKPOINT
+info2.TextColor3 = Color3.fromRGB(200, 200, 200)
+info2.TextSize = 12
+info2.Parent = infoFrame
+
+local teleportBtn = Instance.new("TextButton")
+teleportBtn.Name = "TeleportBtn"
+teleportBtn.Size = UDim2.new(1, -20, 0, 35)
+teleportBtn.Position = UDim2.new(0, 10, 0, 80)
+teleportBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+teleportBtn.Text = "▶️ ТЕЛЕПОРТ ДО КОНЦА"
+teleportBtn.TextColor3 = Color3.new(1, 1, 1)
+teleportBtn.TextSize = 14
+teleportBtn.Font = Enum.Font.GothamBold
+teleportBtn.Parent = mainFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = teleportBtn
+
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+dragBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+dragBar.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+refreshBtn.MouseButton1Click:Connect(function()
+    CHECKPOINTS_FOLDER = findCheckpointsFolder()
+    if CHECKPOINTS_FOLDER then
+        MAX_CHECKPOINT, MIN_CHECKPOINT = findMaxCheckpoint(CHECKPOINTS_FOLDER)
+        stageValue = findStageValue()
+        currentStage = stageValue and stageValue.Value or 1
+        
+        info1.Text = "Всего чекпоинтов: " .. MAX_CHECKPOINT
+        info2.Text = "Прогресс: " .. currentStage .. " → " .. MAX_CHECKPOINT
+        print("🔄 Обновлено! Найдено " .. MAX_CHECKPOINT .. " чекпоинтов")
+    end
+end)
+
+teleportBtn.MouseButton1Click:Connect(function()
+    if isTeleporting then return end
+    
+    teleportBtn.Text = "⏳ ТЕЛЕПОРТ..."
+    teleportBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+    
+    task.spawn(function()
+        teleportToEnd()
+        
+        teleportBtn.Text = "▶️ ТЕЛЕПОРТ ДО КОНЦА"
+        teleportBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+        
+        if stageValue then
+            info2.Text = "Прогресс: " .. stageValue.Value .. " → " .. MAX_CHECKPOINT
+        end
+    end)
+end)
+
+print("✅ GUI загружен! Перетаскивай за верхнюю панель.")
